@@ -1,0 +1,158 @@
+/* ─── Terminal Panel ─── */
+.chat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.terminal-panel {
+  border-top: 2px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+  transition: height 0.2s;
+  flex-shrink: 0;
+}
+.terminal-panel.collapsed { height: 32px; }
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  height: 32px;
+  flex-shrink: 0;
+}
+.terminal-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.terminal-actions { display: flex; gap: 4px; }
+.terminal-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: var(--font);
+}
+.terminal-btn:hover { background: var(--bg-tertiary); color: var(--text); }
+
+.terminal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.terminal-body .term-line { white-space: pre-wrap; word-break: break-word; }
+.terminal-body .term-line.tool { color: var(--accent); }
+.terminal-body .term-line.success { color: var(--success); }
+.terminal-body .term-line.error { color: var(--danger); }
+.terminal-body .term-line.info { color: var(--text-muted); }
+.terminal-body .term-line .timestamp { color: var(--text-muted); opacity: 0.5; margin-right: 8px; }
+
+/* ─── File Editor ─── */
+.files-actions { display: flex; gap: 8px; }
+
+.files-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.files-content .editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.files-content .editor-toolbar .file-path { font-family: var(--mono); }
+.files-content .editor-toolbar .file-status { font-size: 11px; }
+.files-content .editor-toolbar .file-status.modified { color: var(--warning); }
+.files-content .editor-toolbar .file-status.saved { color: var(--success); }
+
+.editor-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.editor-container textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 4;
+}
+
+.editor-container .line-numbers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 16px 8px 16px 0;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  user-select: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.editor-container .editor-textarea {
+  margin-left: 44px;
+  width: calc(100% - 44px);
+}
+
+/* ─── New File Modal ─── */
+.modal input.setting-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+}
+.modal input.setting-input:focus { border-color: var(--accent); }
