@@ -56,9 +56,15 @@ def _build_engine(mock: bool = False, workspace: str = None, headless: bool = Tr
         from acli.mock_client import MockClient
         client = MockClient()
     else:
-        from acli.client import NvidiaClient
-        base_url, api_key = get_provider(str(BASE_DIR), settings.provider)
-        client = NvidiaClient(api_key=api_key, base_url=base_url)
+        from acli.client import MultiKeyNvidiaClient
+        from acli.extended.providers import get_nvidia_keys
+        keys = get_nvidia_keys()
+        if not keys:
+            base_url, api_key = get_provider(str(BASE_DIR), settings.provider)
+            keys = [api_key]
+        else:
+            base_url = settings.base_url
+        client = MultiKeyNvidiaClient(api_keys=keys, base_url=base_url)
 
     _auto_approve["value"] = settings.auto_approve
 
@@ -132,9 +138,15 @@ def _refresh_runtime(engine: LoopEngine):
     engine._browser_headless = headless
     engine.messages[0]["content"] = settings.system_prompt
     if not engine._mock and engine._provider_name != settings.provider:
-        from acli.client import NvidiaClient
-        base_url, api_key = get_provider(str(BASE_DIR), settings.provider)
-        engine.client = NvidiaClient(api_key=api_key, base_url=base_url)
+        from acli.client import MultiKeyNvidiaClient
+        from acli.extended.providers import get_nvidia_keys
+        keys = get_nvidia_keys()
+        if not keys:
+            base_url, api_key = get_provider(str(BASE_DIR), settings.provider)
+            keys = [api_key]
+        else:
+            base_url = settings.base_url
+        engine.client = MultiKeyNvidiaClient(api_keys=keys, base_url=base_url)
         engine._provider_name = settings.provider
 
 
@@ -143,7 +155,7 @@ def _refresh_runtime(engine: LoopEngine):
 @app.get("/api/status")
 async def api_status():
     engine = get_engine()
-    return {
+    status = {
         "provider": engine.settings.provider,
         "primary_model": engine.model_chain[0],
         "last_model": engine.last_model_used,
@@ -156,6 +168,11 @@ async def api_status():
         "mock": engine._mock,
         "models": engine.model_chain,
     }
+    # Add key stats if using MultiKeyNvidiaClient
+    if hasattr(engine.client, "key_count"):
+        status["key_count"] = engine.client.key_count
+        status["key_stats"] = engine.client.key_stats()
+    return status
 
 
 @app.get("/api/settings")
@@ -239,6 +256,51 @@ async def api_tools():
             "parameters": fn.get("parameters", {}).get("properties", {}),
         })
     return {"tools": tools, "count": len(tools)}
+
+
+@app.get("/api/keys")
+async def api_key_stats():
+    """Get NVIDIA API key rotation stats."""
+    engine = get_engine()
+    if hasattr(engine.client, "key_stats"):
+        return {"keys": engine.client.key_stats(), "total": engine.client.key_count}
+    return {"keys": [], "total": 0, "error": "Multi-key client not in use"}
+
+
+@app.post("/api/keys/add")
+async def api_add_key(payload: dict):
+    """Add a new NVIDIA API key at runtime."""
+    key = (payload or {}).get("key", "").strip()
+    if not key:
+        return JSONResponse({"error": "key is required"}, status_code=400)
+    engine = get_engine()
+    if hasattr(engine.client, "_keys"):
+        if key in engine.client._keys:
+            return {"ok": True, "message": "Key already exists", "total": engine.client.key_count}
+        from openai import OpenAI
+        engine.client._keys.append(key)
+        engine.client._clients[key] = OpenAI(api_key=key, base_url=engine.client._base_url)
+        engine.client._key_status[key] = {
+            "available": True, "cooldown_until": 0,
+            "requests": 0, "errors": 0, "last_used": 0,
+        }
+        return {"ok": True, "message": f"Key added (now {engine.client.key_count} keys)", "total": engine.client.key_count}
+    return JSONResponse({"error": "Multi-key client not in use"}, status_code=400)
+
+
+@app.post("/api/keys/remove")
+async def api_remove_key(payload: dict):
+    """Remove an NVIDIA API key by index (1-based)."""
+    index = (payload or {}).get("index")
+    engine = get_engine()
+    if hasattr(engine.client, "_keys") and index is not None:
+        idx = int(index) - 1
+        if 0 <= idx < len(engine.client._keys):
+            key = engine.client._keys.pop(idx)
+            engine.client._clients.pop(key, None)
+            engine.client._key_status.pop(key, None)
+            return {"ok": True, "message": f"Key removed (now {engine.client.key_count} keys)", "total": engine.client.key_count}
+    return JSONResponse({"error": "Invalid index"}, status_code=400)
 
 
 @app.get("/api/dashboard")
