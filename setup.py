@@ -19,11 +19,15 @@ setup(
         "Pillow>=10.0.0",
         "pytesseract>=0.3.10",
         "keyring>=25.0.0",
+        "fastapi>=0.115.0",
+        "uvicorn>=0.30.0",
+        "websockets>=12.0",
     ],
     entry_points={
         "console_scripts": [
             "devorbit=acli.main:main",
             "acli=acli.main:main",
+            "devorbit-desktop=acli.desktop.launch:main",
         ],
     },
     python_requires=">=3.9",
