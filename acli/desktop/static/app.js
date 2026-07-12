@@ -233,6 +233,7 @@ function switchView(view) {
   if (view === 'files') loadFiles();
   if (view === 'models') loadModels();
   if (view === 'tools') loadTools();
+  if (view === 'keys') loadKeys();
   if (view === 'settings') loadSettings();
 }
 
@@ -443,6 +444,81 @@ function renderTools(tools) {
   `).join('');
 }
 
+// ─── API Keys ─────────────────────────────────────────────────────────
+async function loadKeys() {
+  const data = await api('keys');
+  const info = document.getElementById('keysInfo');
+  const list = document.getElementById('keysList');
+
+  if (data.error || data.total === 0) {
+    info.innerHTML = '<p style="color:var(--text-muted)">Multi-key rotation is not active. Using single key or mock mode.</p>';
+    list.innerHTML = '';
+    return;
+  }
+
+  const available = data.keys.filter(k => k.available).length;
+  const totalReqs = data.keys.reduce((s, k) => s + k.requests, 0);
+  const totalErrors = data.keys.reduce((s, k) => s + k.errors, 0);
+
+  info.innerHTML = `
+    <div class="keys-summary">
+      <div class="key-stat"><div class="label">Total Keys</div><div class="value">${data.total}</div></div>
+      <div class="key-stat"><div class="label">Available</div><div class="value" style="color:var(--success)">${available}</div></div>
+      <div class="key-stat"><div class="label">Total Requests</div><div class="value">${totalReqs}</div></div>
+      <div class="key-stat"><div class="label">Errors</div><div class="value" style="color:${totalErrors > 0 ? 'var(--danger)' : 'var(--text)'}">${totalErrors}</div></div>
+    </div>
+  `;
+
+  list.innerHTML = data.keys.map(k => {
+    const status = k.available ? 'available' : (k.cooldown_remaining > 0 ? 'cooldown' : 'exhausted');
+    const statusText = k.available ? 'AVAILABLE' : (k.cooldown_remaining > 0 ? `COOLDOWN ${k.cooldown_remaining}s` : 'ERROR');
+    return `
+      <div class="key-card ${k.available ? '' : 'unavailable'}">
+        <div class="key-info">
+          <span class="key-number">Key #${k.index}</span>
+          <span class="key-value">${k.key}</span>
+          <div class="key-stats">
+            <span class="stat">Requests: <span class="stat-value">${k.requests}</span></span>
+            <span class="stat">Errors: <span class="stat-value">${k.errors}</span></span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="key-badge ${status}">${statusText}</span>
+          <button class="key-remove" data-index="${k.index}">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.key-remove').forEach(btn => {
+    btn.onclick = async () => {
+      if (confirm('Remove this key?')) {
+        await api('keys/remove', 'POST', {index: parseInt(btn.dataset.index)});
+        loadKeys();
+      }
+    };
+  });
+}
+
+function showAddKeyModal() {
+  document.getElementById('addKeyModal').style.display = 'flex';
+  document.getElementById('newKeyValue').value = '';
+  document.getElementById('newKeyValue').focus();
+}
+
+async function addKey() {
+  const key = document.getElementById('newKeyValue').value.trim();
+  if (!key) return;
+  const data = await api('keys/add', 'POST', {key});
+  if (data.ok) {
+    document.getElementById('addKeyModal').style.display = 'none';
+    termLog('success', `API key added (${data.total} keys total)`);
+    loadKeys();
+  } else {
+    termLog('error', 'Failed to add key: ' + (data.error || 'unknown'));
+  }
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────
 async function loadSettings() {
   settingsData = await api('settings');
@@ -591,6 +667,14 @@ function init() {
   document.getElementById('toolSearch').addEventListener('input', (e) => {
     const q = e.target.value.toLowerCase();
     renderTools(allTools.filter(t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)));
+  });
+
+  // API Keys
+  document.getElementById('btnAddKey').onclick = showAddKeyModal;
+  document.getElementById('addKeyCancel').onclick = () => { document.getElementById('addKeyModal').style.display = 'none'; };
+  document.getElementById('addKeyConfirm').onclick = addKey;
+  document.getElementById('newKeyValue').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addKey();
   });
 
   // Settings
