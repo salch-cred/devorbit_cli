@@ -130,6 +130,63 @@ Never commit `.env`; it is included in `.gitignore`.
 
 Windows equivalents use `run.bat`.
 
+
+
+## Desktop Application
+
+DevOrbit includes a full desktop application with a modern web UI — chat interface, dashboard, file browser, model switcher, tool management, and a settings panel.
+
+### Quick Start
+
+```bash
+# Linux/macOS
+./desktop.sh --mock          # no API key needed (demo mode)
+./desktop.sh                  # with NVIDIA API key
+
+# Windows
+desktop.bat --mock
+desktop.bat
+```
+
+The app opens automatically in your browser at `http://127.0.0.1:8765`.
+
+### Desktop Features
+
+- **Chat** — Full conversation interface with the AI, slash commands, code formatting, and quick prompts
+- **Dashboard** — Live status cards showing provider, model, workspace, browser, tools, and settings
+- **Files** — Browse and read workspace files with a split-pane file explorer
+- **Models** — View and switch the primary model in the fallback chain
+- **Tools** — Search and browse all 139 agent tools with mutating/safe badges
+- **Settings** — Full settings panel with all 8 categories (account, permissions, appearance, models, customizations, browser, app, conversations)
+- **Dark/Light Theme** — Toggle between dark and light themes
+
+### Desktop Options
+
+```bash
+python -m acli.desktop.launch --help
+
+# Options:
+#   --host          Bind address (default: 127.0.0.1)
+#   --port          Port (default: 8765)
+#   --mock          Run with mock client (no API key needed)
+#   --workspace     Workspace directory
+#   --headless      Headless browser (default)
+#   --visible       Visible browser
+#   --no-browser    Don't auto-open browser
+```
+
+### Architecture
+
+```
+Browser (HTML/CSS/JS)
+  ↕ WebSocket + REST
+FastAPI Server (acli/desktop/server.py)
+  ↕
+LoopEngine + Tools (existing acli/ modules)
+```
+
+The desktop app wraps the existing CLI engine — no code duplication. All 139 tools, the loop engine, settings store, and provider routing work identically in both CLI and desktop modes.
+
 ## Settings Center
 
 Open the persistent terminal settings dashboard:
