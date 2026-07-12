@@ -152,7 +152,10 @@ def apply_store(settings: Settings) -> Settings:
 def load_settings() -> Settings:
     load_env()
     settings = Settings()
+    # Support multiple NVIDIA keys: NVIDIA_API_KEY=key1,key2,key3 or NVIDIA_API_KEYS
     settings.api_key = os.environ.get("NVIDIA_API_KEY", "")
+    if not settings.api_key:
+        settings.api_key = os.environ.get("NVIDIA_API_KEYS", "")
     settings.base_url = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     settings.github_token = os.environ.get("GITHUB_TOKEN", "")
     settings.github_repo = os.environ.get("GITHUB_REPO", "")
