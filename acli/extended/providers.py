@@ -36,3 +36,26 @@ def get_provider(base_dir: str, name: str):
     key=key or cfg.get('default_key','')
     if not key: raise ValueError('Missing '+cfg.get('api_key_env','API key'))
     return cfg['base_url'],key
+
+
+def get_nvidia_keys():
+    """Load all NVIDIA API keys from environment (supports comma-separated and NVIDIA_API_KEYS)."""
+    import os
+    keys = []
+    # Primary: NVIDIA_API_KEY (can be comma-separated)
+    primary = os.environ.get("NVIDIA_API_KEY", "")
+    if primary:
+        keys.extend([k.strip() for k in primary.split(",") if k.strip()])
+    # Secondary: NVIDIA_API_KEYS
+    secondary = os.environ.get("NVIDIA_API_KEYS", "")
+    if secondary:
+        for k in secondary.split(","):
+            k = k.strip()
+            if k and k not in keys:
+                keys.append(k)
+    # Also check NVIDIA_API_KEY_1 through NVIDIA_API_KEY_10
+    for i in range(1, 11):
+        k = os.environ.get(f"NVIDIA_API_KEY_{i}", "").strip()
+        if k and k not in keys:
+            keys.append(k)
+    return keys
