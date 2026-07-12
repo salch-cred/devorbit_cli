@@ -1,0 +1,72 @@
+name: cross-platform-release
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python -m compileall -q acli
+      - run: python -m unittest discover -s tests -v
+      - run: python packaging/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antigravity-windows
+          path: dist/
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python -m compileall -q acli
+      - run: python -m unittest discover -s tests -v
+      - run: python packaging/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antigravity-macos
+          path: dist/
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python -m compileall -q acli
+      - run: python -m unittest discover -s tests -v
+      - run: python packaging/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antigravity-linux
+          path: dist/
+
+
+  container-sandbox:
+    name: Docker sandbox contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sandbox image
+        run: docker build -t devorbit-sandbox:ci -f packaging/Dockerfile.sandbox packaging
+      - name: Verify isolation contract
+        run: |
+          docker run --rm --init --read-only --cap-drop=ALL \
+            --security-opt=no-new-privileges --pids-limit=128 \
+            --memory=512m --cpus=1 --network=none \
+            --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            -v "$PWD:/workspace:rw" -w /workspace \
+            devorbit-sandbox:ci \
+            'python --version && test ! -w /etc && test -w /tmp && test -w /workspace'
