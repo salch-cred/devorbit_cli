@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevOrbit — Desktop</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="12" stroke="var(--accent)" stroke-width="2"/>
+            <circle cx="14" cy="14" r="5" fill="var(--accent)"/>
+            <circle cx="14" cy="14" r="2" fill="var(--bg)"/>
+          </svg>
+          <span class="logo-text">DevOrbit</span>
+        </div>
+        <button class="icon-btn sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="chat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Chat</span>
+        </button>
+        <button class="nav-item" data-view="dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="files">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>Files</span>
+        </button>
+        <button class="nav-item" data-view="models">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Models</span>
+        </button>
+        <button class="nav-item" data-view="tools">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span>Tools</span>
+        </button>
+        <button class="nav-item" data-view="settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-pill" id="statusPill">
+          <span class="status-dot"></span>
+          <span class="status-text">Connecting...</span>
+        </div>
+        <button class="icon-btn" id="themeToggle" title="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Chat View -->
+      <section class="view active" id="view-chat">
+        <div class="chat-header">
+          <h2>Chat</h2>
+          <div class="chat-actions">
+            <button class="btn btn-sm" id="btnReflect" title="Reflect on last answer">Reflect</button>
+            <button class="btn btn-sm" id="btnReset" title="Clear conversation">Reset</button>
+            <button class="btn btn-sm" id="btnApprove" title="Toggle auto-approve">
+              <span id="approveLabel">Auto-approve: OFF</span>
+            </button>
+          </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="welcome-msg">
+            <h3>Welcome to DevOrbit</h3>
+            <p>Ask me to code, search the web, browse, edit files, run commands, and more.</p>
+            <div class="quick-prompts">
+              <button class="quick-prompt" data-prompt="List files in the workspace and explain the project structure">List files & explain structure</button>
+              <button class="quick-prompt" data-prompt="Search the web for the latest Python packaging best practices">Search web for Python packaging</button>
+              <button class="quick-prompt" data-prompt="Create a checkpoint, then write a hello world Python script">Create checkpoint & write script</button>
+              <button class="quick-prompt" data-prompt="Run /doctor to diagnose the environment">Run environment doctor</button>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-input-wrapper">
+            <textarea id="chatInput" placeholder="Type a message or /command..." rows="1"></textarea>
+            <button class="btn btn-primary btn-send" id="btnSend">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+          </div>
+          <div class="chat-hint">Press Enter to send, Shift+Enter for new line</div>
+        </div>
+      </section>
+
+      <!-- Dashboard View -->
+      <section class="view" id="view-dashboard">
+        <div class="view-header"><h2>Dashboard</h2><button class="btn btn-sm" id="btnRefreshDash">Refresh</button></div>
+        <div class="dash-grid" id="dashGrid"></div>
+      </section>
+
+      <!-- Files View -->
+      <section class="view" id="view-files">
+        <div class="view-header"><h2>Files</h2><button class="btn btn-sm" id="btnRefreshFiles">Refresh</button></div>
+        <div class="files-layout">
+          <div class="files-list" id="filesList"></div>
+          <div class="files-content" id="filesContent">
+            <div class="files-placeholder">Select a file to view its content</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Models View -->
+      <section class="view" id="view-models">
+        <div class="view-header"><h2>Models</h2></div>
+        <div class="models-info" id="modelsInfo"></div>
+        <div class="models-list" id="modelsList"></div>
+      </section>
+
+      <!-- Tools View -->
+      <section class="view" id="view-tools">
+        <div class="view-header"><h2>Tools</h2><input type="text" class="search-input" id="toolSearch" placeholder="Search tools..."></div>
+        <div class="tools-grid" id="toolsGrid"></div>
+      </section>
+
+      <!-- Settings View -->
+      <section class="view" id="view-settings">
+        <div class="view-header">
+          <h2>Settings</h2>
+          <div class="settings-actions">
+            <button class="btn btn-sm" id="btnSettingsShow">Show All</button>
+            <button class="btn btn-sm btn-danger" id="btnSettingsReset">Reset All</button>
+          </div>
+        </div>
+        <div class="settings-tabs" id="settingsTabs"></div>
+        <div class="settings-content" id="settingsContent"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="confirmModal" style="display:none">
+    <div class="modal">
+      <h3>Confirmation Required</h3>
+      <p id="confirmText"></p>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="confirmDeny">Deny</button>
+        <button class="btn btn-primary" id="confirmApprove">Approve</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
