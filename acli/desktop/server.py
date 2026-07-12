@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -20,7 +21,7 @@ from acli.extended.orchestrator import run_team
 from acli.extended.project import build_index, repo_map, search_index
 from acli.extended import dev_rescue
 from acli.production import credentials
-from acli.tools.registry import TOOL_SCHEMAS, MUTATING_TOOLS
+from acli.tools.registry import TOOL_SCHEMAS, MUTATING_TOOLS, describe_call, dispatch
 from acli.tools.browser_tools import configure_browser, SESSION as BROWSER_SESSION
 from acli.tools import fs_tools
 
@@ -65,7 +66,8 @@ def _build_engine(mock: bool = False, workspace: str = None, headless: bool = Tr
         import uuid as _uuid
         confirm_id = _uuid.uuid4().hex[:12]
         _pending_confirmations[confirm_id] = {"description": description}
-        # Wait for user response (polling-based, timeout 120s)
+        # Notify via websocket that a confirmation is needed
+        # (the WS handler will pick it up)
         import time as _time
         deadline = _time.time() + 120
         while _time.time() < deadline:
@@ -291,6 +293,20 @@ async def api_write_file(payload: dict):
         return JSONResponse({"error": str(exc)}, status_code=400)
 
 
+@app.post("/api/files/create")
+async def api_create_file(payload: dict):
+    engine = get_engine()
+    try:
+        path = payload["path"]
+        content = payload.get("content", "")
+        result = fs_tools.write_file(
+            engine.settings.workspace_dir, path, content, settings=engine.settings
+        )
+        return {"ok": True, "message": result, "path": path}
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+
+
 @app.post("/api/chat/reset")
 async def api_chat_reset():
     engine = get_engine()
@@ -479,11 +495,36 @@ async def ws_chat(websocket: WebSocket):
                 # Normal message — run engine in executor to avoid blocking
                 await websocket.send_json({"type": "status", "message": "Thinking..."})
                 try:
+                    # Patch the confirm callback to send WS notifications
+                    original_confirm = engine.confirm_callback
+
+                    def ws_confirm(description):
+                        import uuid as _uuid
+                        confirm_id = _uuid.uuid4().hex[:12]
+                        _pending_confirmations[confirm_id] = {"description": description}
+                        # Send confirmation request via WebSocket (async)
+                        asyncio.run_coroutine_threadsafe(
+                            websocket.send_json({"type": "confirm", "id": confirm_id, "description": description}),
+                            asyncio.get_event_loop()
+                        )
+                        import time as _time
+                        deadline = _time.time() + 120
+                        while _time.time() < deadline:
+                            if confirm_id in _confirm_results:
+                                return _confirm_results.pop(confirm_id)
+                            _time.sleep(0.3)
+                        return False
+
+                    engine.confirm_callback = ws_confirm
+
                     result = await asyncio.get_event_loop().run_in_executor(None, engine.send, user_text)
+                    engine.confirm_callback = original_confirm
                     await websocket.send_json({"type": "response", "content": result})
                 except LoopExhaustedError as exc:
+                    engine.confirm_callback = original_confirm
                     await websocket.send_json({"type": "error", "message": str(exc)})
                 except Exception as exc:
+                    engine.confirm_callback = original_confirm
                     await websocket.send_json({"type": "error", "message": str(exc)})
 
             elif msg_type == "confirm":
