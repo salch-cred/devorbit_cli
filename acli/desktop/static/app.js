@@ -1,4 +1,4 @@
-/* DevOrbit Desktop — Application Logic */
+/* DevOrbit Desktop — Application Logic v2 */
 (function() {
 'use strict';
 
@@ -6,6 +6,12 @@
 let ws = null;
 let currentView = 'chat';
 let settingsData = null;
+let allTools = [];
+let currentFilePath = null;
+let originalFileContent = '';
+let fileModified = false;
+let terminalExpanded = true;
+
 let settingsSections = ['account','permissions','appearance','models','customizations','browser','app','conversations'];
 let settingsFields = {
   account: [
@@ -87,6 +93,28 @@ async function api(path, method='GET', body=null) {
   return resp.json();
 }
 
+// ─── Terminal Output Panel ────────────────────────────────────────────
+function termLog(type, message) {
+  const body = document.getElementById('terminalBody');
+  const time = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.className = 'term-line ' + type;
+  line.innerHTML = '<span class="timestamp">[' + time + ']</span>' + message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function termClear() {
+  document.getElementById('terminalBody').innerHTML = '';
+}
+
+function termToggle() {
+  const panel = document.getElementById('terminalPanel');
+  panel.classList.toggle('collapsed');
+  const btn = document.getElementById('terminalToggle');
+  btn.textContent = panel.classList.contains('collapsed') ? '▸' : '▾';
+}
+
 // ─── WebSocket ────────────────────────────────────────────────────────
 function connectWS() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -95,11 +123,13 @@ function connectWS() {
   ws.onopen = () => {
     document.querySelector('.status-dot').className = 'status-dot connected';
     document.querySelector('.status-text').textContent = 'Connected';
+    termLog('info', 'WebSocket connected');
   };
 
   ws.onclose = () => {
     document.querySelector('.status-dot').className = 'status-dot error';
     document.querySelector('.status-text').textContent = 'Disconnected';
+    termLog('error', 'WebSocket disconnected — reconnecting...');
     setTimeout(connectWS, 2000);
   };
 
@@ -115,18 +145,26 @@ function handleWSMessage(data) {
   switch(data.type) {
     case 'response':
       addMessage('assistant', data.content);
+      termLog('success', 'AI response received');
       break;
     case 'system':
       addMessage('system', data.message);
+      termLog('info', data.message);
       break;
     case 'status':
       addMessage('status', data.message);
+      termLog('info', data.message);
       break;
     case 'error':
       addMessage('error', data.message);
+      termLog('error', data.message);
+      break;
+    case 'tool':
+      termLog('tool', data.name + ': ' + (data.description || data.result || ''));
       break;
     case 'confirm':
       showConfirmModal(data.id, data.description);
+      termLog('info', 'Confirmation requested: ' + data.description);
       break;
   }
   container.scrollTop = container.scrollHeight;
@@ -141,11 +179,9 @@ function sendWS(data) {
 // ─── Chat ─────────────────────────────────────────────────────────────
 function addMessage(role, content) {
   const container = document.getElementById('chatMessages');
-  // Remove welcome message
   const welcome = container.querySelector('.welcome-msg');
   if (welcome) welcome.remove();
 
-  // Remove last status message
   if (role === 'status' || role === 'system') {
     const lastStatus = container.querySelector('.msg.status:last-child');
     if (lastStatus) lastStatus.remove();
@@ -154,7 +190,6 @@ function addMessage(role, content) {
   const div = document.createElement('div');
   div.className = 'msg ' + role;
 
-  // Format code blocks
   let formatted = content;
   if (role === 'assistant' || role === 'system') {
     formatted = formatCodeBlocks(content);
@@ -166,7 +201,6 @@ function addMessage(role, content) {
 }
 
 function formatCodeBlocks(text) {
-  // Replace ```code``` with <pre> blocks
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -181,6 +215,7 @@ function sendMessage() {
   if (!text) return;
 
   addMessage('user', text);
+  termLog('info', 'User: ' + text.substring(0, 100));
   sendWS({type: 'message', content: text});
   input.value = '';
   input.style.height = 'auto';
@@ -228,7 +263,7 @@ async function loadDashboard() {
   `).join('');
 }
 
-// ─── Files ────────────────────────────────────────────────────────────
+// ─── Files with Editor ────────────────────────────────────────────────
 async function loadFiles() {
   const data = await api('files?path=.');
   const list = document.getElementById('filesList');
@@ -236,20 +271,128 @@ async function loadFiles() {
     const files = data.files.split('\n').filter(f => f && !f.includes('truncated'));
     list.innerHTML = files.map(f => `<div class="file-item" data-path="${f}">${f}</div>`).join('');
     list.querySelectorAll('.file-item').forEach(item => {
-      item.onclick = () => readFile(item.dataset.path, item);
+      item.onclick = () => openFile(item.dataset.path, item);
     });
   }
 }
 
-async function readFile(path, el) {
+async function openFile(path, el) {
   document.querySelectorAll('.file-item').forEach(f => f.classList.remove('active'));
   el.classList.add('active');
+  currentFilePath = path;
+
   const data = await api('files/read?path=' + encodeURIComponent(path));
   const content = document.getElementById('filesContent');
+
   if (data.error) {
     content.innerHTML = `<div class="files-placeholder">${data.error}</div>`;
+    document.getElementById('btnSaveFile').style.display = 'none';
+    return;
+  }
+
+  originalFileContent = data.content;
+  fileModified = false;
+
+  const ext = path.split('.').pop().toLowerCase();
+  const langMap = {py:'python', js:'javascript', ts:'typescript', jsx:'javascript', tsx:'typescript',
+    html:'html', css:'css', json:'json', md:'markdown', sh:'bash', yml:'yaml', yaml:'yaml',
+    go:'go', rs:'rust', java:'java', c:'c', cpp:'cpp', sql:'sql', xml:'xml'};
+  const lang = langMap[ext] || 'text';
+
+  content.innerHTML = `
+    <div class="editor-toolbar">
+      <span class="file-path">${path}</span>
+      <span class="file-status" id="fileStatus">${lang}</span>
+    </div>
+    <div class="editor-container">
+      <div class="line-numbers" id="lineNumbers"></div>
+      <textarea class="editor-textarea" id="editorTextarea" spellcheck="false">${data.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    </div>
+  `;
+
+  document.getElementById('btnSaveFile').style.display = '';
+
+  const textarea = document.getElementById('editorTextarea');
+  updateLineNumbers(textarea.value);
+
+  textarea.addEventListener('input', () => {
+    updateLineNumbers(textarea.value);
+    const modified = textarea.value !== originalFileContent;
+    if (modified !== fileModified) {
+      fileModified = modified;
+      const status = document.getElementById('fileStatus');
+      status.textContent = modified ? '● Modified' : lang;
+      status.className = 'file-status ' + (modified ? 'modified' : '');
+    }
+  });
+
+  // Tab key support
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      textarea.value = textarea.value.substring(0, start) + '    ' + textarea.value.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start + 4;
+      textarea.dispatchEvent(new Event('input'));
+    }
+  });
+
+  termLog('info', 'Opened file: ' + path);
+}
+
+function updateLineNumbers(text) {
+  const lines = text.split('\n').length;
+  const ln = document.getElementById('lineNumbers');
+  if (ln) {
+    ln.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('<br>');
+  }
+}
+
+async function saveCurrentFile() {
+  if (!currentFilePath) return;
+  const textarea = document.getElementById('editorTextarea');
+  if (!textarea) return;
+
+  const data = await api('files/write', 'POST', {path: currentFilePath, content: textarea.value});
+  if (data.ok) {
+    originalFileContent = textarea.value;
+    fileModified = false;
+    const status = document.getElementById('fileStatus');
+    status.textContent = '✓ Saved';
+    status.className = 'file-status saved';
+    setTimeout(() => {
+      status.textContent = currentFilePath.split('.').pop();
+      status.className = 'file-status';
+    }, 2000);
+    termLog('success', 'Saved: ' + currentFilePath);
   } else {
-    content.innerHTML = `<pre>${data.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
+    termLog('error', 'Save failed: ' + (data.error || 'unknown'));
+  }
+}
+
+function showNewFileModal() {
+  document.getElementById('newFileModal').style.display = 'flex';
+  document.getElementById('newFileName').value = '';
+  document.getElementById('newFileName').focus();
+}
+
+async function createNewFile() {
+  const name = document.getElementById('newFileName').value.trim();
+  if (!name) return;
+
+  const data = await api('files/write', 'POST', {path: name, content: ''});
+  if (data.ok) {
+    document.getElementById('newFileModal').style.display = 'none';
+    termLog('success', 'Created: ' + name);
+    loadFiles();
+    // Auto-open the new file
+    setTimeout(() => {
+      const item = document.querySelector(`.file-item[data-path="${name}"]`);
+      if (item) openFile(name, item);
+    }, 200);
+  } else {
+    termLog('error', 'Create failed: ' + (data.error || 'unknown'));
   }
 }
 
@@ -274,13 +417,13 @@ async function loadModels() {
   list.querySelectorAll('.model-card').forEach(card => {
     card.onclick = async () => {
       await api('models/set', 'POST', {model: card.dataset.model});
+      termLog('info', 'Switched primary model to: ' + card.dataset.model);
       loadModels();
     };
   });
 }
 
 // ─── Tools ────────────────────────────────────────────────────────────
-let allTools = [];
 async function loadTools() {
   const data = await api('tools');
   allTools = data.tools;
@@ -349,14 +492,12 @@ function renderSettingsSection(section) {
       </div>`;
   }).join('');
 
-  // Wire up changes
   content.querySelectorAll('input[data-path]').forEach(input => {
-    const event = input.type === 'checkbox' ? 'change' : 'change';
-    input.addEventListener(event, async () => {
+    input.addEventListener('change', async () => {
       let val = input.type === 'checkbox' ? input.checked : input.value;
       await api('settings', 'POST', {path: input.dataset.path, value: val});
-      // Refresh settings data
       settingsData = await api('settings');
+      termLog('info', 'Setting updated: ' + input.dataset.path);
     });
   });
 }
@@ -367,18 +508,14 @@ function showConfirmModal(id, description) {
   document.getElementById('confirmText').textContent = description;
   modal.style.display = 'flex';
 
-  const approve = document.getElementById('confirmApprove');
-  const deny = document.getElementById('confirmDeny');
-
   const cleanup = () => { modal.style.display = 'none'; };
-  approve.onclick = () => { sendWS({type:'confirm', id, approved:true}); cleanup(); };
-  deny.onclick = () => { sendWS({type:'confirm', id, approved:false}); cleanup(); };
+  document.getElementById('confirmApprove').onclick = () => { sendWS({type:'confirm', id, approved:true}); cleanup(); };
+  document.getElementById('confirmDeny').onclick = () => { sendWS({type:'confirm', id, approved:false}); cleanup(); };
 }
 
 // ─── Theme ────────────────────────────────────────────────────────────
 function toggleTheme() {
   const html = document.documentElement;
-  const isDark = html.classList.contains('dark');
   html.classList.toggle('dark');
   html.classList.toggle('light');
 }
@@ -390,12 +527,10 @@ function init() {
     item.onclick = () => switchView(item.dataset.view);
   });
 
-  // Sidebar toggle
   document.getElementById('sidebarToggle').onclick = () => {
     document.getElementById('sidebar').classList.toggle('collapsed');
   };
 
-  // Theme toggle
   document.getElementById('themeToggle').onclick = toggleTheme;
 
   // Chat
@@ -422,21 +557,35 @@ function init() {
         <h3>Welcome to DevOrbit</h3>
         <p>Ask me to code, search the web, browse, edit files, run commands, and more.</p>
       </div>`;
+    termLog('info', 'Conversation reset');
   };
   document.getElementById('btnReflect').onclick = async () => {
+    termLog('info', 'Reflecting on last answer...');
     const data = await api('chat/reflect', 'POST');
     if (data.ok) addMessage('assistant', data.response);
   };
   document.getElementById('btnApprove').onclick = async () => {
     const data = await api('approve/toggle', 'POST');
     document.getElementById('approveLabel').textContent = 'Auto-approve: ' + (data.auto_approve ? 'ON' : 'OFF');
+    termLog('info', 'Auto-approve toggled: ' + (data.auto_approve ? 'ON' : 'OFF'));
   };
 
-  // Dashboard refresh
+  // Terminal panel
+  document.getElementById('terminalToggle').onclick = termToggle;
+  document.getElementById('terminalClear').onclick = termClear;
+
+  // Dashboard
   document.getElementById('btnRefreshDash').onclick = loadDashboard;
 
-  // Files refresh
+  // Files
   document.getElementById('btnRefreshFiles').onclick = loadFiles;
+  document.getElementById('btnSaveFile').onclick = saveCurrentFile;
+  document.getElementById('btnNewFile').onclick = showNewFileModal;
+  document.getElementById('newFileCancel').onclick = () => { document.getElementById('newFileModal').style.display = 'none'; };
+  document.getElementById('newFileCreate').onclick = createNewFile;
+  document.getElementById('newFileName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') createNewFile();
+  });
 
   // Tool search
   document.getElementById('toolSearch').addEventListener('input', (e) => {
@@ -444,7 +593,7 @@ function init() {
     renderTools(allTools.filter(t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)));
   });
 
-  // Settings actions
+  // Settings
   document.getElementById('btnSettingsShow').onclick = async () => {
     const data = await api('settings');
     addMessage('system', JSON.stringify(data, null, 2));
@@ -454,11 +603,13 @@ function init() {
     if (confirm('Reset all settings to defaults?')) {
       await api('settings/reset', 'POST');
       loadSettings();
+      termLog('info', 'Settings reset to defaults');
     }
   };
 
-  // Connect WebSocket
+  // Connect
   connectWS();
+  termLog('info', 'DevOrbit Desktop starting...');
 
   // Load initial approve state
   api('status').then(data => {
