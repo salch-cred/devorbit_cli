@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+workspace/
+conversations/
+settings.json
+settings.json.tmp
+settings.json.bak
+providers.json
+.devorbit-index.sqlite
+.devorbit-checkpoints/
+.devorbit-run-state.json
+.devorbit-audit.jsonl
+.devorbit-processes/
+.devorbit-pending.patch
+*.json.bak
