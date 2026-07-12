@@ -1,0 +1,16 @@
+[
+  { "name": "z-ai/glm-5.2", "supports_tools": true, "note": "GLM-5.2 -- flagship agentic/coding model, best for the tool loop" },
+  { "name": "z-ai/glm-5.1", "supports_tools": true },
+  { "name": "z-ai/glm-4.7", "supports_tools": true },
+  { "name": "meta/llama-3.1-405b-instruct", "supports_tools": true },
+  { "name": "meta/llama-3.1-70b-instruct", "supports_tools": true },
+  { "name": "qwen/qwen2.5-72b-instruct", "supports_tools": true },
+  { "name": "mistralai/mixtral-8x22b-instruct-v0.1", "supports_tools": true },
+  { "name": "moonshotai/kimi-k2.5", "supports_tools": true },
+  { "name": "deepseek-ai/deepseek-r1", "supports_tools": false },
+  { "name": "minimaxai/minimax-m2.7", "supports_tools": false },
+  { "name": "openai/gpt-oss-120b", "supports_tools": false },
+  { "name": "google/gemma-2-9b-it", "supports_tools": false },
+  { "name": "microsoft/phi-3-medium-4k-instruct", "supports_tools": false },
+  { "name": "meta/llama-3.1-8b-instruct", "supports_tools": false }
+]
