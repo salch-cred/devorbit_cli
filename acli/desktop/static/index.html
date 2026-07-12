@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DevOrbit — Desktop</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/codemirror.css">
+  <link rel="stylesheet" href="/static/editor.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
@@ -78,16 +80,29 @@
             </button>
           </div>
         </div>
-        <div class="chat-messages" id="chatMessages">
-          <div class="welcome-msg">
-            <h3>Welcome to DevOrbit</h3>
-            <p>Ask me to code, search the web, browse, edit files, run commands, and more.</p>
-            <div class="quick-prompts">
-              <button class="quick-prompt" data-prompt="List files in the workspace and explain the project structure">List files & explain structure</button>
-              <button class="quick-prompt" data-prompt="Search the web for the latest Python packaging best practices">Search web for Python packaging</button>
-              <button class="quick-prompt" data-prompt="Create a checkpoint, then write a hello world Python script">Create checkpoint & write script</button>
-              <button class="quick-prompt" data-prompt="Run /doctor to diagnose the environment">Run environment doctor</button>
+        <div class="chat-body">
+          <div class="chat-messages" id="chatMessages">
+            <div class="welcome-msg">
+              <h3>Welcome to DevOrbit</h3>
+              <p>Ask me to code, search the web, browse, edit files, run commands, and more.</p>
+              <div class="quick-prompts">
+                <button class="quick-prompt" data-prompt="List files in the workspace and explain the project structure">List files & explain structure</button>
+                <button class="quick-prompt" data-prompt="Search the web for the latest Python packaging best practices">Search web for Python packaging</button>
+                <button class="quick-prompt" data-prompt="Create a checkpoint, then write a hello world Python script">Create checkpoint & write script</button>
+                <button class="quick-prompt" data-prompt="Run /doctor to diagnose the environment">Run environment doctor</button>
+              </div>
             </div>
+          </div>
+          <!-- Terminal Output Panel -->
+          <div class="terminal-panel" id="terminalPanel">
+            <div class="terminal-header">
+              <span class="terminal-title">Tool Output</span>
+              <div class="terminal-actions">
+                <button class="terminal-btn" id="terminalToggle">▾</button>
+                <button class="terminal-btn" id="terminalClear">Clear</button>
+              </div>
+            </div>
+            <div class="terminal-body" id="terminalBody"></div>
           </div>
         </div>
         <div class="chat-input-area">
@@ -109,11 +124,18 @@
 
       <!-- Files View -->
       <section class="view" id="view-files">
-        <div class="view-header"><h2>Files</h2><button class="btn btn-sm" id="btnRefreshFiles">Refresh</button></div>
+        <div class="view-header">
+          <h2>Files</h2>
+          <div class="files-actions">
+            <button class="btn btn-sm" id="btnRefreshFiles">Refresh</button>
+            <button class="btn btn-sm btn-primary" id="btnSaveFile" style="display:none">Save</button>
+            <button class="btn btn-sm" id="btnNewFile">New File</button>
+          </div>
+        </div>
         <div class="files-layout">
           <div class="files-list" id="filesList"></div>
           <div class="files-content" id="filesContent">
-            <div class="files-placeholder">Select a file to view its content</div>
+            <div class="files-placeholder">Select a file to view and edit</div>
           </div>
         </div>
       </section>
@@ -158,6 +180,19 @@
     </div>
   </div>
 
+  <!-- New File Modal -->
+  <div class="modal-overlay" id="newFileModal" style="display:none">
+    <div class="modal">
+      <h3>Create New File</h3>
+      <input type="text" class="setting-input" id="newFileName" placeholder="path/to/file.py" style="width:100%;margin:12px 0">
+      <div class="modal-actions">
+        <button class="btn" id="newFileCancel">Cancel</button>
+        <button class="btn btn-primary" id="newFileCreate">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/codemirror.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>
