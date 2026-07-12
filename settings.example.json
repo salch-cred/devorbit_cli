@@ -1,0 +1,22 @@
+{
+  "account": {"telemetry": false, "marketing_emails": false},
+  "permissions": {
+    "auto_approve": false,
+    "workspace_dir": "./workspace",
+    "terminal_policy": "isolated_only",
+    "sandbox_backend": "auto",
+    "allow_native_terminal": false,
+    "allow_file_reads": true,
+    "allow_file_writes": true,
+    "denied_file_patterns": [".env", "*.pem", "*.key", "*credentials*"],
+    "network_default": "allow",
+    "allowed_domains": [],
+    "denied_domains": []
+  },
+  "appearance": {"verbose_agent_chat": true, "conversation_width": "default", "theme": "dark"},
+  "models": {"provider": "nvidia", "primary_model": "z-ai/glm-5.2", "auto_route": true, "response_cache": true, "temperature": 0.4, "context_tokens": 6000, "retries_per_model": 2, "max_tool_iterations": 8},
+  "customizations": {"system_prompt": "", "enabled_skills": [], "mcp_servers": [], "custom_rules": []},
+  "browser": {"headless": false, "javascript_policy": "ask", "confirm_actuation": true, "allowed_domains": [], "denied_domains": []},
+  "app": {"prevent_sleep": true, "keep_in_background": false, "notifications": true},
+  "conversations": {"autosave": true, "history_dir": "./conversations", "max_saved": 100, "save_tool_results": true}
+}

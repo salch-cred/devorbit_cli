@@ -1,0 +1,8 @@
+{
+  "nvidia": {"base_url": "https://integrate.api.nvidia.com/v1", "api_key_env": "NVIDIA_API_KEY"},
+  "openai": {"base_url": "https://api.openai.com/v1", "api_key_env": "OPENAI_API_KEY"},
+  "openrouter": {"base_url": "https://openrouter.ai/api/v1", "api_key_env": "OPENROUTER_API_KEY"},
+  "groq": {"base_url": "https://api.groq.com/openai/v1", "api_key_env": "GROQ_API_KEY"},
+  "ollama": {"base_url": "http://127.0.0.1:11434/v1", "api_key_env": "OLLAMA_API_KEY", "default_key": "ollama"},
+  "lmstudio": {"base_url": "http://127.0.0.1:1234/v1", "api_key_env": "LMSTUDIO_API_KEY", "default_key": "lm-studio"}
+}
