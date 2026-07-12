@@ -57,9 +57,15 @@ def refresh_runtime(engine):
     engine._browser_headless = headless
     engine.messages[0]["content"] = settings.system_prompt
     if not engine._mock and engine._provider_name != settings.provider:
-        from acli.client import NvidiaClient
-        base_url, api_key = get_provider(str(BASE_DIR), settings.provider)
-        engine.client = NvidiaClient(api_key=api_key, base_url=base_url)
+        from acli.client import MultiKeyNvidiaClient
+        from acli.extended.providers import get_nvidia_keys
+        keys = get_nvidia_keys()
+        if not keys:
+            base_url, api_key = get_provider(str(BASE_DIR), settings.provider)
+            keys = [api_key]
+        else:
+            base_url = settings.base_url
+        engine.client = MultiKeyNvidiaClient(api_keys=keys, base_url=base_url)
         engine._provider_name = settings.provider
 
 
