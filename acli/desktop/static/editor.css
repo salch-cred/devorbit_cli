@@ -143,6 +143,35 @@
   width: calc(100% - 44px);
 }
 
+/* ─── API Keys ─── */
+.keys-info { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.keys-info .keys-summary { display: flex; gap: 24px; }
+.keys-info .keys-summary .key-stat .label { font-size: 12px; color: var(--text-muted); }
+.keys-info .keys-summary .key-stat .value { font-size: 20px; font-weight: 600; }
+.keys-list { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+.key-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.key-card.unavailable { opacity: 0.5; border-color: var(--danger); }
+.key-card .key-info { display: flex; flex-direction: column; gap: 4px; }
+.key-card .key-number { font-weight: 600; font-size: 14px; }
+.key-card .key-value { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+.key-card .key-stats { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); }
+.key-card .key-stats .stat { display: flex; gap: 4px; }
+.key-card .key-stats .stat .stat-value { font-weight: 600; color: var(--text); }
+.key-badge { font-size: 11px; padding: 3px 10px; border-radius: 12px; }
+.key-badge.available { background: rgba(63,185,80,0.15); color: var(--success); }
+.key-badge.cooldown { background: rgba(210,153,34,0.15); color: var(--warning); }
+.key-badge.exhausted { background: rgba(248,81,73,0.15); color: var(--danger); }
+.key-remove { background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 13px; }
+.key-remove:hover { background: rgba(248,81,73,0.1); }
+
 /* ─── New File Modal ─── */
 .modal input.setting-input {
   width: 100%;
